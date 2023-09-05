@@ -20,3 +20,4 @@ impl Config {
         Ok(Config{input_file,output_dir})
     }
 }
+
