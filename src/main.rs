@@ -53,29 +53,61 @@ async fn main() {
     let num: usize = inp_string.trim().parse().unwrap();
 
     println!("Downloading {}", playlist.items[num].name);
+
+    let mut results: Vec<String> = Vec::new();
+    let mut offset:u32 = 0 ;
+    
     let songs_list = spot_auth
         .playlist_items_manual(
             PlaylistId::from_uri(&playlist.items[num].id.to_string()).unwrap(),
             None,
             None,
-            None,
-            None,
+            Some(100),
+            Some(offset),
         )
         .await
         .unwrap();
-    let results: Vec<String> = Vec::new();
 
     for song in &songs_list.items {
         if let Some(track) = &song.track {
             match &track {
                 rspotify::model::PlayableItem::Track(fulltrack) => {
-                    println!("{:?}", fulltrack.name);
+                    results.push(fulltrack.name.clone());
                 }
                 _ => println!("deeznuts"),
             };
         }
     }
+    println!("{:?}", songs_list.total);
+    println!("{:?}", results.len());
 
+    while results.len().clone() < usize::try_from(songs_list.total).unwrap() {
+        offset+= 100;
+        println!("Repeating...");
+        let vaasu = spot_auth
+            .playlist_items_manual(
+                PlaylistId::from_uri(&playlist.items[num].id.to_string()).unwrap(),
+                None,
+                None,
+                Some(100),
+                Some(offset),
+            )
+            .await
+            .unwrap();
+    
+        for song in &vaasu.items {
+            if let Some(track) = &song.track {
+                match &track {
+                    rspotify::model::PlayableItem::Track(fulltrack) => {
+                        results.push(fulltrack.name.clone());
+                    }
+                    _ => println!("deeznuts"),
+                };
+            }
+        }
+    }
+    
+    
     for music in content.lines().map(|x| String::from(x)) {
         let output_dir_clone = config.output_dir.clone();
         let threads = thread::spawn(move || {
