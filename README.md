@@ -10,3 +10,6 @@ cargo run -- spotify ~/outputdir
 
 ### Usage with txt file 
 cargo run -- file  ./input.txt  ~/outputdir
+
+
+Anyone got the balls to roll the dice with my app credentials?
