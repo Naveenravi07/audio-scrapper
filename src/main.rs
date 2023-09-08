@@ -4,7 +4,7 @@ use rspotify::{
     prelude::{BaseClient, OAuthClient},
     scopes, AuthCodeSpotify, Credentials, OAuth,
 };
-use std::{fs, process, thread};
+use std::{fs, process, rc::Rc, sync::Arc, thread};
 use youtube_dl::{SearchOptions, YoutubeDl};
 
 pub struct PlaylistTracks {
@@ -16,28 +16,31 @@ pub struct PlaylistTracks {
 async fn main() {
     let args: std::env::Args = std::env::args();
 
-    let config = audio_scrapper::Config::build(args).unwrap_or_else(|message| {
-        eprintln!("Problems in parsing arguments : {}", message);
-        process::exit(1);
-    });
+    let config = Arc::new(
+        audio_scrapper::Config::build(args).unwrap_or_else(|message| {
+            eprintln!("Problems in parsing arguments : {}", message);
+            process::exit(1);
+        }),
+    );
 
     println!("{:?}", config);
 
     match config.method {
         InputMethods::File => {
-            let content = fs::read_to_string(&config.input_file.unwrap()).unwrap_or_else(|_err| {
-                eprintln!("No file found at specified location");
-                process::exit(1);
-            });
+            let content = fs::read_to_string(&config.input_file.as_ref().unwrap())
+                .unwrap_or_else(|_err| {
+                    eprintln!("No file found at specified location");
+                    process::exit(1);
+                });
 
             for music in content.lines().map(|x| String::from(x)) {
-                let output_dir_clone = config.output_dir.clone();
+                let config_clone = Arc::clone(&config);
                 let threads = thread::spawn(move || {
                     let options = SearchOptions::youtube(&music);
                     let audio = YoutubeDl::search_for(&options)
                         .extract_audio(true)
                         .output_template(&music)
-                        .download_to(output_dir_clone);
+                        .download_to(&config_clone.output_dir);
                     match audio {
                         Ok(_) => println!("{} Download Successfull", music),
                         Err(_) => println!("Err Downloading {} from youtube", music),
@@ -88,10 +91,9 @@ async fn main() {
     let mut offset: u32 = 0;
 
     while {
-        
         let results = fetch_tracks_of_playlist(&spotify, &playlisturl, Some(offset)).await;
         offset += 100;
-        downlaod_tracks_from_youtube(&results.tracks,config.output_dir.clone());
+        downlaod_tracks_from_youtube(&results.tracks, config.output_dir.clone());
 
         results.tracks.len().clone() < usize::try_from(results.total.unwrap()).unwrap()
     } {}
@@ -129,9 +131,8 @@ async fn fetch_tracks_of_playlist(
     }
 }
 
-fn downlaod_tracks_from_youtube(tracks: &Vec<String>, output_dir:String) {
+fn downlaod_tracks_from_youtube(tracks: &Vec<String>, output_dir: String) {
     for music in tracks {
-        println!("{}",output_dir);
         let music = music.clone();
         let output_dir = output_dir.clone();
         let threads = thread::spawn(move || {
