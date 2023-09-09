@@ -55,7 +55,7 @@ async fn main() {
 
     let credentials = Credentials::new(
         "7d4cca88e358409488db59c8dea2d3f9",
-        "f375416f175b4931afae80e0641ca981",
+        "e63d6a668a5d43a08c095d8cc8d7b6cb",
     );
 
     let oauth = OAuth {
@@ -93,9 +93,9 @@ async fn main() {
     while {
         let results = fetch_tracks_of_playlist(&spotify, &playlisturl, Some(offset)).await;
         offset += 100;
-        downlaod_tracks_from_youtube(&results.tracks, config.output_dir.clone());
+        downlaod_tracks_from_youtube(&results.tracks, &config.output_dir);
 
-        results.tracks.len().clone() < usize::try_from(results.total.unwrap()).unwrap()
+        results.tracks.len() < usize::try_from(results.total.unwrap()).unwrap()
     } {}
 }
 async fn fetch_tracks_of_playlist(
@@ -131,7 +131,7 @@ async fn fetch_tracks_of_playlist(
     }
 }
 
-fn downlaod_tracks_from_youtube(tracks: &Vec<String>, output_dir: String) {
+fn downlaod_tracks_from_youtube(tracks: &Vec<String>, output_dir: &String) {
     for music in tracks {
         let music = music.clone();
         let output_dir = output_dir.clone();
