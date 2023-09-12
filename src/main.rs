@@ -1,30 +1,18 @@
-use audio_scrapper::InputMethods;
-use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
-use rspotify::{
-    model::PlaylistId,
-    prelude::{BaseClient, OAuthClient},
-    scopes, AuthCodeSpotify, Credentials, OAuth,
-};
-use std::{fs, process, sync::Arc, thread};
+use audio_scrapper::{InputMethods, SpotifyHelpers};
+use rspotify::{prelude::OAuthClient, scopes, AuthCodeSpotify, Credentials, OAuth};
+use std::time::Instant;
+use std::{fs, process, thread};
 use youtube_dl::{SearchOptions, YoutubeDl};
-use std::time:: Instant;
 
-
-pub struct PlaylistTracks {
-    tracks: Vec<String>,
-    total: Option<u32>,
-}
 
 #[tokio::main]
 async fn main() {
     let args: std::env::Args = std::env::args();
 
-    let config = Arc::new(
-        audio_scrapper::Config::build(args).unwrap_or_else(|message| {
-            eprintln!("Problems in parsing arguments : {}", message);
-            process::exit(1);
-        }),
-        );
+    let config = audio_scrapper::Config::build(args).unwrap_or_else(|message| {
+        eprintln!("Problems in parsing arguments : {}", message);
+        process::exit(1);
+    });
 
     println!("{:?}", config);
 
@@ -37,13 +25,13 @@ async fn main() {
                 });
 
             for music in content.lines().map(|x| String::from(x)) {
-                let config_clone = Arc::clone(&config);
+                let folder_location = config.output_dir.clone();
                 let threads = thread::spawn(move || {
                     let options = SearchOptions::youtube(&music);
                     let audio = YoutubeDl::search_for(&options)
                         .extract_audio(true)
                         .output_template(&music)
-                        .download_to(&config_clone.output_dir);
+                        .download_to(folder_location);
                     match audio {
                         Ok(_) => println!("{} Download Successfull", music),
                         Err(_) => println!("Err Downloading {} from youtube", music),
@@ -59,7 +47,7 @@ async fn main() {
             let credentials = Credentials::new(
                 "7d4cca88e358409488db59c8dea2d3f9",
                 "e63d6a668a5d43a08c095d8cc8d7b6cb",
-                );
+            );
 
             let oauth = OAuth {
                 redirect_uri: "http://localhost:42069".to_string(),
@@ -94,10 +82,17 @@ async fn main() {
             let mut offset: u32 = 0;
 
             while {
-                let results = fetch_tracks_of_playlist(&spotify, &playlisturl, Some(offset)).await;
+                let results = <AuthCodeSpotify as SpotifyHelpers>::fetch_tracks_of_playlist(
+                    &spotify,
+                    &playlisturl,
+                    Some(offset),
+                )
+                .await;
                 offset += 100;
-                downlaod_tracks_from_youtube(&results.tracks, &config.output_dir);
-
+                <AuthCodeSpotify as SpotifyHelpers>::downlaod_tracks_from_youtube(
+                    &results.tracks,
+                    &config.output_dir,
+                );
                 results.tracks.len() < usize::try_from(results.total.unwrap()).unwrap()
             } {}
             let duration = start.elapsed();
@@ -105,51 +100,3 @@ async fn main() {
         }
     }
 }
-async fn fetch_tracks_of_playlist(
-    spotify: &AuthCodeSpotify,
-    playlisturl: &String,
-    offset: Option<u32>,
-    ) -> PlaylistTracks {
-    let mut results: Vec<String> = Vec::new();
-    let songs = spotify
-        .playlist_items_manual(
-            PlaylistId::from_uri(&playlisturl).unwrap(),
-            None,
-            None,
-            Some(100),
-            offset,
-            )
-        .await
-        .unwrap();
-
-    for song in songs.items {
-        if let Some(track) = &song.track {
-            match &track {
-                rspotify::model::PlayableItem::Track(fulltrack) => {
-                    results.push(fulltrack.name.clone());
-                }
-                _ => println!("deeznuts"),
-            };
-        }
-    }
-    PlaylistTracks {
-        tracks: results,
-        total: Some(songs.total),
-    }
-}
-
-fn downlaod_tracks_from_youtube(tracks: &Vec<String>, output_dir: &String) {
-    tracks.par_iter().for_each(|music|{
-        let options = SearchOptions::youtube(music);
-        let audio = YoutubeDl::search_for(&options)
-            .extract_audio(true)
-            .output_template(music)
-            .download_to(output_dir);
-        match audio {
-            Ok(_) => println!("{} Download Successfull", music),
-            Err(_) => println!("Err Downloading {} from youtube", music),
-        }
-
-    })        
-}
-
