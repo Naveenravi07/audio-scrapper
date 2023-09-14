@@ -71,20 +71,8 @@ pub struct PlaylistTracks {
     pub total: Option<u32>,
 }
 
-#[async_trait::async_trait]
-pub trait SpotifyHelpers {
-    async fn fetch_tracks_of_playlist(
-        spotify: &AuthCodeSpotify,
-        playlisturl: &String,
-        offset: Option<u32>,
-    ) -> PlaylistTracks;
 
-    fn downlaod_tracks_from_youtube(tracks: &Vec<String>, output_dir: &String);
-}
-
-#[async_trait::async_trait]
-impl SpotifyHelpers for AuthCodeSpotify {
-    async fn fetch_tracks_of_playlist(
+  pub  async fn fetch_tracks_of_playlist(
         spotify: &AuthCodeSpotify,
         playlisturl: &String,
         offset: Option<u32>,
@@ -118,7 +106,7 @@ impl SpotifyHelpers for AuthCodeSpotify {
         }
     }
 
-    fn downlaod_tracks_from_youtube(tracks: &Vec<String>, output_dir: &String) {
+  pub fn downlaod_tracks_from_youtube(tracks: &Vec<String>, output_dir: &String) {
         tracks.par_iter().for_each(|music| {
             let options = SearchOptions::youtube(music);
             let audio = YoutubeDl::search_for(&options)
@@ -131,4 +119,4 @@ impl SpotifyHelpers for AuthCodeSpotify {
             }
         })
     }
-}
+

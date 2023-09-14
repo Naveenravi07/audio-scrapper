@@ -1,4 +1,4 @@
-use audio_scrapper::{InputMethods, SpotifyHelpers};
+use audio_scrapper::{InputMethods,downlaod_tracks_from_youtube,fetch_tracks_of_playlist};
 use rspotify::{prelude::OAuthClient, scopes, AuthCodeSpotify, Credentials, OAuth};
 use std::{fs, process};
 use std::env;
@@ -34,11 +34,8 @@ async fn main() {
                 .split("\n")
                 .map(|x| x.to_string())
                 .collect();
+            downlaod_tracks_from_youtube(&content_vec,&config.output_dir);
 
-            <AuthCodeSpotify as SpotifyHelpers>::downlaod_tracks_from_youtube(
-                &content_vec,
-                &config.output_dir,
-            );
         }
 
         InputMethods::Spotify => {
@@ -104,19 +101,9 @@ async fn main() {
             let mut offset: u32 = 0;
 
             while {
-                let results = <AuthCodeSpotify as SpotifyHelpers>::fetch_tracks_of_playlist(
-                    &spotify,
-                    &playlisturl,
-                    Some(offset),
-                )
-                .await;
+                let results = fetch_tracks_of_playlist(&spotify,&playlisturl,Some(offset)).await;
                 offset += 100;
-                <AuthCodeSpotify as SpotifyHelpers>::downlaod_tracks_from_youtube(
-                    &results.tracks,
-                    &config.output_dir,
-                );
-                println!("vec downlaoded size  was , {}",results.tracks.len());
-                println!("vec api size  was , {}",results.total.unwrap());
+                downlaod_tracks_from_youtube(&results.tracks,&config.output_dir);
                 results.tracks.len() < usize::try_from(results.total.unwrap()).unwrap()
             } {}
         }
