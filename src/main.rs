@@ -47,7 +47,7 @@ async fn main() {
             let credentials = Credentials::new(
                 "7d4cca88e358409488db59c8dea2d3f9",
                 "e63d6a668a5d43a08c095d8cc8d7b6cb",
-            );
+                );
 
             let oauth = OAuth {
                 redirect_uri: "http://localhost:42069".to_string(),
@@ -56,14 +56,27 @@ async fn main() {
             };
 
             let spotify = AuthCodeSpotify::new(credentials, oauth);
-            let url = spotify.get_authorize_url(false).unwrap();
-            spotify.prompt_for_token(&url).await.unwrap();
+            let url = spotify.get_authorize_url(false).unwrap_or_else(|err|{
+                eprintln!("\n Problem in autorizing spotify");
+                eprintln!("{}",err);
+                process::exit(1);
+            });
+
+            spotify.prompt_for_token(&url).await.unwrap_or_else(|err|{
+                eprintln!("\n Invalid url");
+                eprintln!("{}",err);
+                process::exit(1);
+            });
 
             println!("Fetching your playlists ");
             let playlist = spotify
                 .current_user_playlists_manual(None, None)
                 .await
-                .unwrap();
+                .unwrap_or_else(|err|{
+                    eprintln!("\n Failed to fetch playlist");
+                    eprintln!("{}",err);
+                    process::exit(1);
+                });
 
             for (index, track) in playlist.items.iter().enumerate() {
                 println!("Press {} to download {}", index, track.name);
@@ -86,13 +99,13 @@ async fn main() {
                     &spotify,
                     &playlisturl,
                     Some(offset),
-                )
-                .await;
+                    )
+                    .await;
                 offset += 100;
                 <AuthCodeSpotify as SpotifyHelpers>::downlaod_tracks_from_youtube(
                     &results.tracks,
                     &config.output_dir,
-                );
+                    );
                 results.tracks.len() < usize::try_from(results.total.unwrap()).unwrap()
             } {}
             let duration = start.elapsed();

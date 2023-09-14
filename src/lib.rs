@@ -65,6 +65,7 @@ impl Config {
     }
 }
 
+
 pub struct PlaylistTracks {
     pub tracks: Vec<String>,
     pub total: Option<u32>,
