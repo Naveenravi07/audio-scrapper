@@ -1,3 +1,9 @@
+use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
+use rspotify::model::PlaylistId;
+use rspotify::prelude::BaseClient;
+use rspotify::AuthCodeSpotify;
+use youtube_dl::{SearchOptions, YoutubeDl};
+
 #[derive(Debug)]
 pub struct Config {
     pub input_file: Option<String>,
@@ -55,6 +61,74 @@ impl Config {
             input_file,
             output_dir,
             method: input_method,
+        })
+    }
+}
+
+
+pub struct PlaylistTracks {
+    pub tracks: Vec<String>,
+    pub total: Option<u32>,
+}
+
+#[async_trait::async_trait]
+pub trait SpotifyHelpers {
+    async fn fetch_tracks_of_playlist(
+        spotify: &AuthCodeSpotify,
+        playlisturl: &String,
+        offset: Option<u32>,
+    ) -> PlaylistTracks;
+
+    fn downlaod_tracks_from_youtube(tracks: &Vec<String>, output_dir: &String);
+}
+
+#[async_trait::async_trait]
+impl SpotifyHelpers for AuthCodeSpotify {
+    async fn fetch_tracks_of_playlist(
+        spotify: &AuthCodeSpotify,
+        playlisturl: &String,
+        offset: Option<u32>,
+    ) -> PlaylistTracks {
+        let mut results: Vec<String> = Vec::new();
+
+        let songs = spotify
+            .playlist_items_manual(
+                PlaylistId::from_uri(&playlisturl).unwrap(),
+                None,
+                None,
+                Some(100),
+                offset,
+            )
+            .await
+            .unwrap();
+
+        for song in songs.items {
+            if let Some(track) = &song.track {
+                match &track {
+                    rspotify::model::PlayableItem::Track(fulltrack) => {
+                        results.push(fulltrack.name.clone());
+                    }
+                    _ => println!("deeznuts"),
+                };
+            }
+        }
+        PlaylistTracks {
+            tracks: results,
+            total: Some(songs.total),
+        }
+    }
+
+    fn downlaod_tracks_from_youtube(tracks: &Vec<String>, output_dir: &String) {
+        tracks.par_iter().for_each(|music| {
+            let options = SearchOptions::youtube(music);
+            let audio = YoutubeDl::search_for(&options)
+                .extract_audio(true)
+                .output_template(music)
+                .download_to(output_dir);
+            match audio {
+                Ok(_) => println!("{} Download Successfull", music),
+                Err(_) => println!("Err Downloading {} from youtube", music),
+            }
         })
     }
 }
