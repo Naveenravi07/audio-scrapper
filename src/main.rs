@@ -1,9 +1,6 @@
 use audio_scrapper::{InputMethods, SpotifyHelpers};
 use rspotify::{prelude::OAuthClient, scopes, AuthCodeSpotify, Credentials, OAuth};
-use std::time::Instant;
-use std::{fs, process, thread};
-use youtube_dl::{SearchOptions, YoutubeDl};
-
+use std::{fs, process};
 
 #[tokio::main]
 async fn main() {
@@ -14,40 +11,38 @@ async fn main() {
         process::exit(1);
     });
 
-    println!("{:?}", config);
-
     match config.method {
         InputMethods::File => {
-            let content =
-                fs::read_to_string(&config.input_file.as_ref().unwrap()).unwrap_or_else(|_err| {
-                    eprintln!("No file found at specified location");
-                    process::exit(1);
-                });
 
-            for music in content.lines().map(|x| String::from(x)) {
-                let folder_location = config.output_dir.clone();
-                let threads = thread::spawn(move || {
-                    let options = SearchOptions::youtube(&music);
-                    let audio = YoutubeDl::search_for(&options)
-                        .extract_audio(true)
-                        .output_template(&music)
-                        .download_to(folder_location);
-                    match audio {
-                        Ok(_) => println!("{} Download Successfull", music),
-                        Err(_) => println!("Err Downloading {} from youtube", music),
-                    }
-                });
-                threads.join().unwrap();
-            }
+            let content_raw = fs::read(config.input_file.as_ref().unwrap_or_else(||{
+                eprintln!("Invalid input file");
+                process::exit(1);
+            }));
+
+            let content = content_raw.unwrap_or_else(|err|{
+                eprintln!("cannot read file");
+                eprintln!("{}",err);
+                process::exit(1);
+            });
+
+            let content_vec: Vec<String> = String::from_utf8(content)
+                .unwrap()
+                .split("\n")
+                .map(|x| x.to_string())
+                .collect();
+
+            <AuthCodeSpotify as SpotifyHelpers>::downlaod_tracks_from_youtube(
+                &content_vec,
+                &config.output_dir,
+            );
         }
 
         InputMethods::Spotify => {
-            let start = Instant::now();
 
             let credentials = Credentials::new(
                 "7d4cca88e358409488db59c8dea2d3f9",
                 "e63d6a668a5d43a08c095d8cc8d7b6cb",
-                );
+            );
 
             let oauth = OAuth {
                 redirect_uri: "http://localhost:42069".to_string(),
@@ -56,15 +51,15 @@ async fn main() {
             };
 
             let spotify = AuthCodeSpotify::new(credentials, oauth);
-            let url = spotify.get_authorize_url(false).unwrap_or_else(|err|{
+            let url = spotify.get_authorize_url(false).unwrap_or_else(|err| {
                 eprintln!("\n Problem in autorizing spotify");
-                eprintln!("{}",err);
+                eprintln!("{}", err);
                 process::exit(1);
             });
 
-            spotify.prompt_for_token(&url).await.unwrap_or_else(|err|{
+            spotify.prompt_for_token(&url).await.unwrap_or_else(|err| {
                 eprintln!("\n Invalid url");
-                eprintln!("{}",err);
+                eprintln!("{}", err);
                 process::exit(1);
             });
 
@@ -72,9 +67,9 @@ async fn main() {
             let playlist = spotify
                 .current_user_playlists_manual(None, None)
                 .await
-                .unwrap_or_else(|err|{
+                .unwrap_or_else(|err| {
                     eprintln!("\n Failed to fetch playlist");
-                    eprintln!("{}",err);
+                    eprintln!("{}", err);
                     process::exit(1);
                 });
 
@@ -99,17 +94,17 @@ async fn main() {
                     &spotify,
                     &playlisturl,
                     Some(offset),
-                    )
-                    .await;
+                )
+                .await;
                 offset += 100;
                 <AuthCodeSpotify as SpotifyHelpers>::downlaod_tracks_from_youtube(
                     &results.tracks,
                     &config.output_dir,
-                    );
+                );
+                println!("vec downlaoded size  was , {}",results.tracks.len());
+                println!("vec api size  was , {}",results.total.unwrap());
                 results.tracks.len() < usize::try_from(results.total.unwrap()).unwrap()
             } {}
-            let duration = start.elapsed();
-            println!("Time elapsed in expensive_function() is: {:?}", duration);
         }
     }
 }
