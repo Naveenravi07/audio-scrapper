@@ -1,9 +1,13 @@
 use audio_scrapper::{InputMethods, SpotifyHelpers};
 use rspotify::{prelude::OAuthClient, scopes, AuthCodeSpotify, Credentials, OAuth};
 use std::{fs, process};
+use std::env;
+use dotenvy::dotenv;
+
 
 #[tokio::main]
 async fn main() {
+    dotenv().expect(".env file not found");
     let args: std::env::Args = std::env::args();
 
     let config = audio_scrapper::Config::build(args).unwrap_or_else(|message| {
@@ -38,10 +42,20 @@ async fn main() {
         }
 
         InputMethods::Spotify => {
+            let client_id = env::var("client_id").unwrap_or_else(|err|{
+                eprintln!("Cannot read client id from env file");
+                eprintln!("{}",err);
+                process::exit(1);
+            });
+            let client_secret = env::var("client_secret").unwrap_or_else(|err|{
+                eprintln!("Cannot read client secret from env file");
+                eprintln!("{}",err);
+                process::exit(1);
+            });
 
             let credentials = Credentials::new(
-                "7d4cca88e358409488db59c8dea2d3f9",
-                "e63d6a668a5d43a08c095d8cc8d7b6cb",
+                &client_id,
+                &client_secret,
             );
 
             let oauth = OAuth {
