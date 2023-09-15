@@ -1,59 +1,41 @@
-use audio_scrapper::{InputMethods,downlaod_tracks_from_youtube,fetch_tracks_of_playlist};
-use rspotify::{prelude::OAuthClient, scopes, AuthCodeSpotify, Credentials, OAuth};
-use std::{fs, process};
-use std::env;
+use audio_scrapper::*;
+use clap::Parser;
 use dotenvy::dotenv;
-
+use rspotify::{prelude::OAuthClient, scopes, AuthCodeSpotify, Credentials, OAuth};
+use std::env;
+use std::{fs, process};
 
 #[tokio::main]
 async fn main() {
     dotenv().expect(".env file not found");
-    let args: std::env::Args = std::env::args();
 
-    let config = audio_scrapper::Config::build(args).unwrap_or_else(|message| {
-        eprintln!("Problems in parsing arguments : {}", message);
-        process::exit(1);
-    });
+    let args = Args::parse();
 
-    match config.method {
-        InputMethods::File => {
-
-            let content_raw = fs::read(config.input_file.as_ref().unwrap_or_else(||{
-                eprintln!("Invalid input file");
-                process::exit(1);
-            }));
-
-            let content = content_raw.unwrap_or_else(|err|{
+    match args.method {
+        InputMethod::File { path } => {
+            let content_raw = fs::read_to_string(&path);
+            let content = content_raw.unwrap_or_else(|err| {
                 eprintln!("cannot read file");
-                eprintln!("{}",err);
+                eprintln!("{}", err);
                 process::exit(1);
             });
-
-            let content_vec: Vec<String> = String::from_utf8(content)
-                .unwrap()
-                .split("\n")
-                .map(|x| x.to_string())
-                .collect();
-            downlaod_tracks_from_youtube(&content_vec,&config.output_dir);
-
+            let tracks = content.lines().map(|x|x.to_string()).collect::<Vec<_>>();
+            downlaod_tracks_from_youtube(&tracks, &args.output_dir);
         }
 
-        InputMethods::Spotify => {
-            let client_id = env::var("client_id").unwrap_or_else(|err|{
+        InputMethod::Spotify => {
+            let client_id = env::var("client_id").unwrap_or_else(|err| {
                 eprintln!("Cannot read client id from env file");
-                eprintln!("{}",err);
+                eprintln!("{}", err);
                 process::exit(1);
             });
-            let client_secret = env::var("client_secret").unwrap_or_else(|err|{
+            let client_secret = env::var("client_secret").unwrap_or_else(|err| {
                 eprintln!("Cannot read client secret from env file");
-                eprintln!("{}",err);
+                eprintln!("{}", err);
                 process::exit(1);
             });
 
-            let credentials = Credentials::new(
-                &client_id,
-                &client_secret,
-            );
+            let credentials = Credentials::new(&client_id, &client_secret);
 
             let oauth = OAuth {
                 redirect_uri: "http://localhost:42069".to_string(),
@@ -101,11 +83,12 @@ async fn main() {
             let mut offset: u32 = 0;
 
             while {
-                let results = fetch_tracks_of_playlist(&spotify,&playlisturl,Some(offset)).await;
+                let results = fetch_tracks_of_playlist(&spotify, &playlisturl, Some(offset)).await;
                 offset += 100;
-                downlaod_tracks_from_youtube(&results.tracks,&config.output_dir);
+                downlaod_tracks_from_youtube(&results.tracks, &args.output_dir);
                 results.tracks.len() < usize::try_from(results.total.unwrap()).unwrap()
             } {}
         }
     }
 }
+
