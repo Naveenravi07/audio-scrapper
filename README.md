@@ -5,9 +5,11 @@ A simple CLI tool that scrapes audio from YouTube if a match is found. This tool
 1) Download your entire Spotify playlist.
 2) Download all songs by supplying their names through a text file.
 
-## Before You Download
+## Prerequisites
 
-Install Rust and Cargo on your system. You can follow the instructions [here](https://doc.rust-lang.org/cargo/getting-started/installation.html).
+1)Install Rust and Cargo on your system. Follow the instructions [here](https://doc.rust-lang.org/cargo/getting-started/installation.html).
+2)Spotify API App Credentials: Create a Spotify API app in the Spotify Developer Dashboard and note down the "Client ID" and "Client Secret."
+3)create a .env file in the root dir of the project and paste the ``client_id`` and ``client_secret`` 
 
 ## Usage
 
