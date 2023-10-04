@@ -8,8 +8,9 @@ A simple CLI tool that scrapes audio from YouTube if a match is found. This tool
 ## Prerequisites
 
 1. Install Rust and Cargo on your system. Follow the instructions [here](https://doc.rust-lang.org/cargo/getting-started/installation.html).
-2. Create a Spotify API app in the [Spotify Developer Dashboard](https://developer.spotify.com) and note down the "Client ID" and "Client Secret".
-3. Create a .env file in the root dir of the project and paste the ``client_id`` and ``client_secret`` .
+2. Install yt-dlp. Follow the instructions [here](https://github.com/yt-dlp/yt-dlp/wiki/Installation).
+3. Create a Spotify API app in the [Spotify Developer Dashboard](https://developer.spotify.com) and note down the "Client ID" and "Client Secret".
+4. Create a .env file in the root dir of the project and paste the ``client_id`` and ``client_secret`` .
 
 ## Usage
 
