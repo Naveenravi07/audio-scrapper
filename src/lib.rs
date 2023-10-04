@@ -121,7 +121,6 @@ impl SpotifyHelpers for AuthCodeSpotify {
     fn downlaod_tracks_from_youtube(tracks: &Vec<String>, output_dir: &String) {
         tracks.par_iter().for_each(|music|{ 
             let options = SearchOptions::youtube(music);
-            println!("{:?}",options);
             let audio = YoutubeDl::search_for(&options)
                 .extract_audio(true)
                 .output_template(music)
