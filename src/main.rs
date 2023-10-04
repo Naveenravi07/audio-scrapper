@@ -7,7 +7,6 @@ use dotenvy::dotenv;
 
 #[tokio::main]
 async fn main() {
-    dotenv().expect(".env file not found");
     let args: std::env::Args = std::env::args();
 
     let config = audio_scrapper::Config::build(args).unwrap_or_else(|message| {
@@ -42,6 +41,8 @@ async fn main() {
         }
 
         InputMethods::Spotify => {
+            dotenv().expect(".env file not found");
+
             let client_id = env::var("client_id").unwrap_or_else(|err|{
                 eprintln!("Cannot read client id from env file");
                 eprintln!("{}",err);
