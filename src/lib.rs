@@ -119,15 +119,16 @@ impl SpotifyHelpers for AuthCodeSpotify {
     }
 
     fn downlaod_tracks_from_youtube(tracks: &Vec<String>, output_dir: &String) {
-        tracks.par_iter().for_each(|music| {
+        tracks.par_iter().for_each(|music|{ 
             let options = SearchOptions::youtube(music);
+            println!("{:?}",options);
             let audio = YoutubeDl::search_for(&options)
                 .extract_audio(true)
                 .output_template(music)
                 .download_to(output_dir);
             match audio {
                 Ok(_) => println!("{} Download Successfull", music),
-                Err(_) => println!("Err Downloading {} from youtube", music),
+                Err(err) => println!("Err Downloading {} from youtube,{:?}", music,err),
             }
         })
     }
