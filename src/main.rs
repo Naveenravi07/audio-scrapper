@@ -7,7 +7,6 @@ use std::{fs, process};
 
 #[tokio::main]
 async fn main() {
-    dotenv().expect(".env file not found");
 
     let args = Args::parse();
 
@@ -23,8 +22,10 @@ async fn main() {
             downlaod_tracks_from_youtube(&tracks, &args.output_dir);
         }
 
-        InputMethod::Spotify => {
-            let client_id = env::var("client_id").unwrap_or_else(|err| {
+        InputMethods::Spotify => {
+            dotenv().expect(".env file not found");
+
+            let client_id = env::var("client_id").unwrap_or_else(|err|{
                 eprintln!("Cannot read client id from env file");
                 eprintln!("{}", err);
                 process::exit(1);
