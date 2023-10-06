@@ -116,8 +116,6 @@ async fn main() {
                     &results.tracks,
                     &config.output_dir,
                 );
-                println!("vec downlaoded size  was , {}",results.tracks.len());
-                println!("vec api size  was , {}",results.total.unwrap());
                 results.tracks.len() < usize::try_from(results.total.unwrap()).unwrap()
             } {}
         }
