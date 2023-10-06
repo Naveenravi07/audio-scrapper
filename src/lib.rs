@@ -1,3 +1,4 @@
+
 use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
 use rspotify::model::PlaylistId;
 use rspotify::prelude::BaseClient;
@@ -122,8 +123,8 @@ impl SpotifyHelpers for AuthCodeSpotify {
         tracks.par_iter().for_each(|music|{ 
             let options = SearchOptions::youtube(music);
             let audio = YoutubeDl::search_for(&options)
-                .extract_audio(true)
-                .output_template(music)
+                .output_template(&format!("{}.m4a",music))
+                .format("140")
                 .download_to(output_dir);
             match audio {
                 Ok(_) => println!("{} Download Successfull", music),
