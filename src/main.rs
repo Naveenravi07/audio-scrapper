@@ -22,7 +22,7 @@ async fn main() {
             downlaod_tracks_from_youtube(&tracks, &args.output_dir);
         }
 
-        InputMethods::Spotify => {
+        InputMethod::Spotify => {
             dotenv().expect(".env file not found");
 
             let client_id = env::var("client_id").unwrap_or_else(|err|{
