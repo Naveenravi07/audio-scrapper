@@ -69,7 +69,7 @@ pub  async fn fetch_tracks_of_playlist(
     }
 }
 
-    fn downlaod_tracks_from_youtube(tracks: &Vec<String>, output_dir: &String) {
+    pub fn downlaod_tracks_from_youtube(tracks: &Vec<String>, output_dir: &PathBuf) {
         tracks.par_iter().for_each(|music|{ 
             let options = SearchOptions::youtube(music);
             let audio = YoutubeDl::search_for(&options)

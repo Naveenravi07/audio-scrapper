@@ -19,7 +19,7 @@ async fn main() {
                 process::exit(1);
             });
             let tracks = content.lines().map(|x|x.to_string()).collect::<Vec<_>>();
-            downlaod_tracks_from_youtube(&tracks, &args.output_dir);
+            audio_scrapper::downlaod_tracks_from_youtube(&tracks, &args.output_dir);
         }
 
         InputMethod::Spotify => {
@@ -86,7 +86,7 @@ async fn main() {
             while {
                 let results = fetch_tracks_of_playlist(&spotify, &playlisturl, Some(offset)).await;
                 offset += 100;
-                downlaod_tracks_from_youtube(&results.tracks, &args.output_dir);
+                audio_scrapper::downlaod_tracks_from_youtube(&results.tracks, &args.output_dir);
                 results.tracks.len() < usize::try_from(results.total.unwrap()).unwrap()
             } {}
         }
