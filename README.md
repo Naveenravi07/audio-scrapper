@@ -15,9 +15,8 @@ A simple CLI tool that scrapes audio from YouTube if a match is found. This tool
 ## Usage
 
 ### Usage with spotify
-``` cargo run -- spotify ~/outputdir ```
+``` cargo run -- outputdir spotify ```
 
 ### Usage with txt file 
-``` cargo run -- file  ./input.txt  ~/outputdir```
-
+``` cargo run -- outputdir file  ./input.txt```
 
