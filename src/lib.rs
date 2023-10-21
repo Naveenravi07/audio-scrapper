@@ -1,3 +1,4 @@
+
 use std::path:: PathBuf;
 use rayon::prelude::*;
 use rspotify::model:: PlaylistId;
@@ -68,16 +69,16 @@ pub  async fn fetch_tracks_of_playlist(
     }
 }
 
-pub fn downlaod_tracks_from_youtube(tracks: &Vec<String>, output_dir: &PathBuf) {
-    tracks.par_iter().for_each(|music| {
-        let options = SearchOptions::youtube(music);
-        let audio = YoutubeDl::search_for(&options)
-            .extract_audio(true)
-            .output_template(music)
-            .download_to(output_dir);
-        match audio {
-            Ok(_) => println!("{} Download Successfull", music),
-            Err(_) => println!("Err Downloading {} from youtube", music),
-        }
-    })
-}
+    fn downlaod_tracks_from_youtube(tracks: &Vec<String>, output_dir: &String) {
+        tracks.par_iter().for_each(|music|{ 
+            let options = SearchOptions::youtube(music);
+            let audio = YoutubeDl::search_for(&options)
+                .output_template(&format!("{}.m4a",music))
+                .format("140")
+                .download_to(output_dir);
+            match audio {
+                Ok(_) => println!("{} Download Successfull", music),
+                Err(err) => println!("Err Downloading {} from youtube,{:?}", music,err),
+            }
+        })
+    }
